@@ -1,5 +1,7 @@
 # Regex engine in Rust
 
+Matches text against a pattern using a lazy NFA.
+
 ## Parsing
 
 The parser uses these production rules.
