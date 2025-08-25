@@ -1,6 +1,8 @@
+mod ast;
 mod lexer;
-mod parser;
 mod nfa;
+mod parser;
 mod regex;
+mod token;
 
 pub use regex::*;

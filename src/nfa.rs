@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::parser::*;
+use crate::ast::*;
 
 #[derive(Default, Debug)]
 struct Node {
