@@ -53,9 +53,9 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
 
                 if n == 1 {
                     out.push(Literal(num));
+                    num = 0;
                     Normal
                 } else {
-                    num = 0;
                     Hex(n - 1)
                 }
             }
@@ -107,9 +107,25 @@ mod tests {
     }
 
     #[test]
-    fn test_raw_hex() {
+    fn test_escaped_null() {
         let tokens = lexer("a\\x000\\u0000");
-        let expected = Ok(vec![l('a'), l('\x00'), l('0'), l('\x00')]);
+        let expected = Ok(vec![l('a'), l('\x00'), l('0'), l('\u{0000}')]);
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_escaped_hex() {
+        let tokens = lexer("a\\x120\\u1234");
+        let expected = Ok(vec![l('a'), l('\x12'), l('0'), l('\u{1234}')]);
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_raw_hex() {
+        let tokens = lexer("\x12\u{1234}");
+        let expected = Ok(vec![l('\x12'), l('\u{1234}')]);
 
         assert_eq!(tokens, expected);
     }
