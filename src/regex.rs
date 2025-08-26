@@ -5,7 +5,7 @@ use crate::nfa::*;
 use crate::parser::*;
 
 pub struct Regex {
-    nfa: NFA,
+    nfa: Nfa,
 }
 
 impl Display for Regex {
@@ -18,7 +18,7 @@ impl Regex {
     pub fn new(pattern: &str) -> Self {
         let tokens = lexer(pattern).unwrap();
         let ast = parse(&tokens);
-        let nfa = NFA::new(ast);
+        let nfa = Nfa::new(ast);
         Self { nfa }
     }
 

@@ -16,7 +16,7 @@ impl Graph {
     fn new_node(&mut self) -> usize {
         self.nodes.push(Node::default());
 
-        return self.nodes.len() - 1;
+        self.nodes.len() - 1
     }
 
     fn add_edge(&mut self, start: usize, end: usize, value: u32) {
@@ -29,7 +29,7 @@ impl Graph {
     }
 }
 
-impl Display for NFA {
+impl Display for Nfa {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (idx, node) in self.graph.nodes.iter().enumerate() {
             write!(f, "{idx}: ")?;
@@ -50,7 +50,7 @@ impl Display for NFA {
 }
 
 #[derive(Debug)]
-pub struct NFA {
+pub struct Nfa {
     graph: Graph,
     start: usize,
     end: usize,
@@ -145,19 +145,19 @@ impl Set {
     }
 
     fn contains(&self, value: usize) -> bool {
-        return self.bools[value];
+        self.bools[value]
     }
 
     fn len(&self) -> usize {
-        return self.bools.len();
+        self.bools.len()
     }
 }
 
-impl NFA {
+impl Nfa {
     pub fn new(tree: Ast) -> Self {
         let mut graph = Graph::default();
         let (start, end) = build(tree, &mut graph);
-        NFA { graph, start, end }
+        Nfa { graph, start, end }
     }
 
     fn traverse(&self, node: usize, seen: &mut Set) {
