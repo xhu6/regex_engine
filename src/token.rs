@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum Token {
     Literal(u32),
     Syntax(u8),

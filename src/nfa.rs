@@ -29,33 +29,6 @@ impl Graph {
     }
 }
 
-impl Display for Nfa {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (idx, node) in self.graph.nodes.iter().enumerate() {
-            write!(f, "{idx}: ")?;
-
-            for (value, next_node) in &node.edges {
-                if let Some(x) = value {
-                    write!(f, "{x}_")?;
-                }
-                write!(f, "{next_node} ")?;
-            }
-
-            writeln!(f)?;
-        }
-
-        writeln!(f, "start: {}", self.start)?;
-        write!(f, "end: {}", self.end)
-    }
-}
-
-#[derive(Debug)]
-pub struct Nfa {
-    graph: Graph,
-    start: usize,
-    end: usize,
-}
-
 fn build(tree: Ast, graph: &mut Graph) -> (usize, usize) {
     use Ast::*;
     use BinOp::*;
@@ -153,11 +126,38 @@ impl Set {
     }
 }
 
+#[derive(Debug)]
+pub struct Nfa {
+    graph: Graph,
+    start: usize,
+    end: usize,
+}
+
+impl Display for Nfa {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (idx, node) in self.graph.nodes.iter().enumerate() {
+            write!(f, "{idx}: ")?;
+
+            for (value, next_node) in &node.edges {
+                if let Some(x) = value {
+                    write!(f, "{x}_")?;
+                }
+                write!(f, "{next_node} ")?;
+            }
+
+            writeln!(f)?;
+        }
+
+        writeln!(f, "start: {}", self.start)?;
+        write!(f, "end: {}", self.end)
+    }
+}
+
 impl Nfa {
     pub fn new(tree: Ast) -> Self {
         let mut graph = Graph::default();
         let (start, end) = build(tree, &mut graph);
-        Nfa { graph, start, end }
+        Self { graph, start, end }
     }
 
     fn traverse(&self, node: usize, seen: &mut Set) {
@@ -167,6 +167,7 @@ impl Nfa {
 
         seen.add(node);
 
+        // Fine to iterate as graph is sparse
         for &(next_value, next_node) in &self.graph.nodes[node].edges {
             if next_value.is_none() {
                 self.traverse(next_node, seen);
@@ -174,20 +175,20 @@ impl Nfa {
         }
     }
 
-    fn update_epsilon(&self, state: Set) -> Set {
+    fn update_epsilon(&self, state: &Set) -> Set {
         let mut new_state = Set::new(state.len());
 
-        for &node in state.usizes.iter() {
+        for &node in &state.usizes {
             self.traverse(node, &mut new_state);
         }
 
         new_state
     }
 
-    fn update_value(&self, state: Set, value: u32) -> Set {
+    fn update_value(&self, state: &Set, value: u32) -> Set {
         let mut new_state = Set::new(state.len());
 
-        for &node in state.usizes.iter() {
+        for &node in &state.usizes {
             for &(next_value, next_node) in &self.graph.nodes[node].edges {
                 if Some(value) == next_value {
                     new_state.add(next_node);
@@ -201,11 +202,11 @@ impl Nfa {
     pub fn check(&self, inp: &str) -> bool {
         let mut state = Set::new(self.graph.nodes.len());
         state.add(self.start);
-        state = self.update_epsilon(state);
+        state = self.update_epsilon(&state);
 
         for c in inp.chars() {
-            state = self.update_value(state, c as u32);
-            state = self.update_epsilon(state);
+            state = self.update_value(&state, c as u32);
+            state = self.update_epsilon(&state);
         }
 
         state.contains(self.end)

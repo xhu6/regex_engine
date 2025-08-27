@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_basic() {
+    fn literal() {
         let tokens = lexer("abcd");
         let expected = Ok(vec![l('a'), l('b'), l('c'), l('d')]);
 
@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn test_syntax() {
+    fn syntax() {
         let tokens = lexer("a+()?");
         let expected = Ok(vec![l('a'), s('+'), s('('), s(')'), s('?')]);
 
@@ -99,7 +99,7 @@ mod tests {
     }
 
     #[test]
-    fn test_escaped_syntax() {
+    fn escaped_syntax() {
         let tokens = lexer("a\\+\\\\");
         let expected = Ok(vec![l('a'), l('+'), l('\\')]);
 
@@ -107,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn test_escaped_null() {
+    fn escaped_null() {
         let tokens = lexer("a\\x000\\u0000");
         let expected = Ok(vec![l('a'), l('\x00'), l('0'), l('\u{0000}')]);
 
@@ -115,7 +115,7 @@ mod tests {
     }
 
     #[test]
-    fn test_escaped_hex() {
+    fn escaped_hex() {
         let tokens = lexer("a\\x120\\u1234");
         let expected = Ok(vec![l('a'), l('\x12'), l('0'), l('\u{1234}')]);
 
@@ -123,7 +123,7 @@ mod tests {
     }
 
     #[test]
-    fn test_raw_hex() {
+    fn raw_hex() {
         let tokens = lexer("\x12\u{1234}");
         let expected = Ok(vec![l('\x12'), l('\u{1234}')]);
 
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mixed_case_raw_hex() {
+    fn mixed_case_raw_hex() {
         let tokens = lexer("a\\x0A\\x0a\\u000a\\u000A");
         let expected = Ok(vec![l('a'), l('\x0A'), l('\x0a'), l('\x0a'), l('\x0a')]);
 
@@ -139,22 +139,22 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_hanging_escape() {
+    fn invalid_hanging_escape() {
         assert!(lexer("abc\\").is_err());
     }
 
     #[test]
-    fn test_invalid_incomplete_hex() {
+    fn invalid_incomplete_hex() {
         assert!(lexer("abc\\x0").is_err());
     }
 
     #[test]
-    fn test_invalid_incomplete_unicode() {
+    fn invalid_incomplete_unicode() {
         assert!(lexer("abc\\u00").is_err());
     }
 
     #[test]
-    fn test_invalid_hex() {
+    fn invalid_hex() {
         assert!(lexer("abc\\xhh").is_err());
     }
 }
