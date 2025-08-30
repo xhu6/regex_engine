@@ -1,19 +1,19 @@
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum UnOp {
     Question,
     Plus,
     Star,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BinOp {
     Union,
     Concat,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Ast {
     Sym(u32),
     Unary(UnOp, Box<Ast>),

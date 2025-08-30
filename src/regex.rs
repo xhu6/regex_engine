@@ -17,7 +17,7 @@ impl Display for Regex {
 impl Regex {
     pub fn new(pattern: &str) -> Self {
         let tokens = lexer(pattern).unwrap();
-        let ast = parse(&tokens);
+        let ast = parse(&tokens).unwrap();
         let nfa = Nfa::new(ast);
         Self { nfa }
     }

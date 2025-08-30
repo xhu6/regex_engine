@@ -4,8 +4,15 @@ Matches text against a pattern using a lazy NFA.
 
 ## Parsing
 
-The parser uses these production rules.
+The AST generated assumes left-associative operations.
 
+The precendence of operations is... (top is highest)
+- Brackets
+- Quantifiers
+- Concatenation
+- Union
+
+The parser uses these production rules:
 ```
 A -> B|A
 A -> B

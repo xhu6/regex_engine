@@ -72,6 +72,6 @@ fn parse_d(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Ast, ()> {
     }
 }
 
-pub fn parse(tokens: &[Token]) -> Ast {
-    parse_a(&mut tokens.iter().peekable()).unwrap()
+pub fn parse(tokens: &[Token]) -> Result<Ast, &'static str> {
+    parse_a(&mut tokens.iter().peekable()).map_err(|()| "Invalid syntax")
 }
