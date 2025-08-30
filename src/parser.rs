@@ -6,21 +6,19 @@ use Token::*;
 use crate::ast::*;
 
 fn parse_a(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Ast, ()> {
-    use BinOp::Union;
     let mut out = parse_b(tokens)?;
 
     while tokens.peek() == Some(&&Syntax(b'|')) {
         tokens.next(); // Progress after peek
 
         let new = parse_b(tokens)?;
-        out = Ast::Binary(Union, Box::new(out), Box::new(new));
+        out = union(out, new);
     }
 
     Ok(out)
 }
 
 fn parse_b(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Ast, ()> {
-    use BinOp::Concat;
     let mut out = parse_c(tokens)?;
 
     while let Some(&token) = tokens.peek() {
@@ -30,27 +28,25 @@ fn parse_b(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Ast, ()> {
         }
 
         let new = parse_c(tokens)?;
-        out = Ast::Binary(Concat, Box::new(out), Box::new(new));
+        out = concat(out, new);
     }
 
     Ok(out)
 }
 
 fn parse_c(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Ast, ()> {
-    use UnOp::*;
-
     let out = parse_d(tokens)?;
 
     if let Some(Syntax(x)) = tokens.peek() {
         let op = match x {
-            b'+' => Plus,
-            b'?' => Question,
-            b'*' => Star,
+            b'+' => plus,
+            b'?' => question,
+            b'*' => star,
             _ => return Ok(out),
         };
 
         tokens.next(); // Progress after peek
-        return Ok(Ast::Unary(op, Box::new(out)));
+        return Ok(op(out));
     }
 
     Ok(out)
@@ -79,9 +75,6 @@ pub fn parse(tokens: &[Token]) -> Result<Ast, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Ast::*;
-    use BinOp::*;
-    use UnOp::*;
 
     fn l(a: char) -> Token {
         Literal(a as u32)
@@ -91,12 +84,16 @@ mod tests {
         Syntax(a as u8)
     }
 
+    fn sym(a: char) -> Ast {
+        Ast::Sym(a as u32)
+    }
+
     #[test]
     fn single_letter() {
         let tokens = vec![l('a')];
         let ast = parse(&tokens);
 
-        let expected = Ok(Ast::Sym('a' as u32));
+        let expected = Ok(sym('a'));
         assert_eq!(ast, expected);
     }
 
@@ -106,38 +103,25 @@ mod tests {
         let tokens = vec![l('a'), s('?')];
         let ast = parse(&tokens);
 
-        let expected = Ok(Ast::Unary(Question, Box::new(Ast::Sym('a' as u32))));
+        let expected = Ok(question(sym('a')));
         assert_eq!(ast, expected);
     }
 
     #[test]
-    fn union() {
+    fn union_op() {
         let tokens = vec![l('a'), s('|'), l('b')];
         let ast = parse(&tokens);
 
-        let expected = Ok(Binary(
-            Union,
-            Box::new(Sym('a' as u32)),
-            Box::new(Sym('b' as u32)),
-        ));
-
+        let expected = Ok(union(sym('a'), sym('b')));
         assert_eq!(ast, expected);
     }
 
     #[test]
-    fn concat() {
+    fn concat_op() {
         let tokens = vec![l('a'), l('b'), l('c')];
         let ast = parse(&tokens);
 
-        let expected = Ok(Binary(
-            Concat,
-            Box::new(Binary(
-                Concat,
-                Box::new(Sym('a' as u32)),
-                Box::new(Sym('b' as u32)),
-            )),
-            Box::new(Sym('c' as u32)),
-        ));
+        let expected = Ok(concat(concat(sym('a'), sym('b')), sym('c')));
         assert_eq!(ast, expected);
     }
 
@@ -146,16 +130,7 @@ mod tests {
         let tokens = vec![l('a'), s('|'), l('b'), l('c')];
         let ast = parse(&tokens);
 
-        let expected = Ok(Binary(
-            Union,
-            Box::new(Sym('a' as u32)),
-            Box::new(Binary(
-                Concat,
-                Box::new(Sym('b' as u32)),
-                Box::new(Sym('c' as u32)),
-            )),
-        ));
-
+        let expected = Ok(union(sym('a'), concat(sym('b'), sym('c'))));
         assert_eq!(ast, expected);
     }
 

@@ -31,3 +31,23 @@ impl Display for Ast {
         }
     }
 }
+
+pub fn question(ast: Ast) -> Ast {
+    Ast::Unary(UnOp::Question, Box::new(ast))
+}
+
+pub fn plus(ast: Ast) -> Ast {
+    Ast::Unary(UnOp::Plus, Box::new(ast))
+}
+
+pub fn star(ast: Ast) -> Ast {
+    Ast::Unary(UnOp::Star, Box::new(ast))
+}
+
+pub fn union(ast: Ast, ast2: Ast) -> Ast {
+    Ast::Binary(BinOp::Union, Box::new(ast), Box::new(ast2))
+}
+
+pub fn concat(ast: Ast, ast2: Ast) -> Ast {
+    Ast::Binary(BinOp::Concat, Box::new(ast), Box::new(ast2))
+}
