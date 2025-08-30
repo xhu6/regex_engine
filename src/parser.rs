@@ -75,3 +75,94 @@ fn parse_d(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Ast, ()> {
 pub fn parse(tokens: &[Token]) -> Result<Ast, &'static str> {
     parse_a(&mut tokens.iter().peekable()).map_err(|()| "Invalid syntax")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use Ast::*;
+    use BinOp::*;
+    use UnOp::*;
+
+    fn l(a: char) -> Token {
+        Literal(a as u32)
+    }
+
+    fn s(a: char) -> Token {
+        Syntax(a as u8)
+    }
+
+    #[test]
+    fn single_letter() {
+        let tokens = vec![l('a')];
+        let ast = parse(&tokens);
+
+        let expected = Ok(Ast::Sym('a' as u32));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn quantifier() {
+        // TODO: Change to range-based quantifiers
+        let tokens = vec![l('a'), s('?')];
+        let ast = parse(&tokens);
+
+        let expected = Ok(Ast::Unary(Question, Box::new(Ast::Sym('a' as u32))));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn union() {
+        let tokens = vec![l('a'), s('|'), l('b')];
+        let ast = parse(&tokens);
+
+        let expected = Ok(Binary(
+            Union,
+            Box::new(Sym('a' as u32)),
+            Box::new(Sym('b' as u32)),
+        ));
+
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn concat() {
+        let tokens = vec![l('a'), l('b'), l('c')];
+        let ast = parse(&tokens);
+
+        let expected = Ok(Binary(
+            Concat,
+            Box::new(Binary(
+                Concat,
+                Box::new(Sym('a' as u32)),
+                Box::new(Sym('b' as u32)),
+            )),
+            Box::new(Sym('c' as u32)),
+        ));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn precendence() {
+        let tokens = vec![l('a'), s('|'), l('b'), l('c')];
+        let ast = parse(&tokens);
+
+        let expected = Ok(Binary(
+            Union,
+            Box::new(Sym('a' as u32)),
+            Box::new(Binary(
+                Concat,
+                Box::new(Sym('b' as u32)),
+                Box::new(Sym('c' as u32)),
+            )),
+        ));
+
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn invalid_empty() {
+        let tokens = vec![];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+}
