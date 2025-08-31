@@ -77,7 +77,7 @@ mod tests {
     use super::*;
 
     fn l(a: char) -> Token {
-        Literal(a as u32)
+        Literal(a)
     }
 
     fn s(a: char) -> Token {
@@ -85,7 +85,7 @@ mod tests {
     }
 
     fn sym(a: char) -> Ast {
-        Ast::Sym(a as u32)
+        Ast::Sym(a)
     }
 
     #[test]

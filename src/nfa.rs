@@ -4,7 +4,7 @@ use crate::ast::*;
 
 #[derive(Default, Debug)]
 struct Node {
-    edges: Vec<(Option<u32>, usize)>,
+    edges: Vec<(Option<char>, usize)>,
 }
 
 #[derive(Default, Debug)]
@@ -19,7 +19,7 @@ impl Graph {
         self.nodes.len() - 1
     }
 
-    fn add_edge(&mut self, start: usize, end: usize, value: u32) {
+    fn add_edge(&mut self, start: usize, end: usize, value: char) {
         self.nodes[start].edges.push((Some(value), end));
     }
 
@@ -185,7 +185,7 @@ impl Nfa {
         new_state
     }
 
-    fn update_value(&self, state: &Set, value: u32) -> Set {
+    fn update_value(&self, state: &Set, value: char) -> Set {
         let mut new_state = Set::new(state.len());
 
         for &node in &state.usizes {
@@ -205,7 +205,7 @@ impl Nfa {
         state = self.update_epsilon(&state);
 
         for c in inp.chars() {
-            state = self.update_value(&state, c as u32);
+            state = self.update_value(&state, c);
             state = self.update_epsilon(&state);
         }
 

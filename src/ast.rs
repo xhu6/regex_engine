@@ -15,7 +15,7 @@ pub enum BinOp {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Ast {
-    Sym(u32),
+    Sym(char),
     Unary(UnOp, Box<Ast>),
     Binary(BinOp, Box<Ast>, Box<Ast>),
 }

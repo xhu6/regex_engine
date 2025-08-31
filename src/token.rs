@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Token {
-    Literal(u32),
+    Literal(char),
     Syntax(u8),
 }
 
@@ -12,7 +12,7 @@ impl Display for Token {
 
         match self {
             Literal(x) => write!(f, "{x}"),
-            Syntax(x) => write!(f, "{}", *x as char),
+            Syntax(x) => write!(f, "{}", x),
         }
     }
 }

@@ -25,7 +25,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
                     out.push(Syntax(c as u8));
                     Normal
                 } else {
-                    out.push(Literal(c as u32));
+                    out.push(Literal(c));
                     Normal
                 }
             }
@@ -36,7 +36,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
                 } else if c == 'u' {
                     Hex(4)
                 } else if syntax.contains(c) {
-                    out.push(Literal(c as u32));
+                    out.push(Literal(c));
                     Normal
                 } else {
                     return Err("Unknown escaped character");
@@ -52,7 +52,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
                 }
 
                 if n == 1 {
-                    out.push(Literal(num));
+                    out.push(Literal(char::from_u32(num).unwrap()));
                     num = 0;
                     Normal
                 } else {
@@ -72,11 +72,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Token::*;
-
-    fn l(a: char) -> Token {
-        Literal(a as u32)
-    }
+    use Token::{Literal as l, Syntax};
 
     fn s(a: char) -> Token {
         Syntax(a as u8)
