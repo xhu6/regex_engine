@@ -135,8 +135,64 @@ mod tests {
     }
 
     #[test]
+    fn brackets() {
+        let tokens = vec![l('a'), s('('), l('b'), s('|'), l('c'), s(')')];
+        let ast = parse(&tokens);
+
+        let expected = Ok(concat(sym('a'), union(sym('b'), sym('c'))));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn unnecessary_brackets() {
+        let tokens = vec![
+            l('a'),
+            s('|'),
+            s('('),
+            s('('),
+            l('b'),
+            l('c'),
+            s(')'),
+            s(')'),
+        ];
+
+        let ast = parse(&tokens);
+
+        let expected = Ok(union(sym('a'), concat(sym('b'), sym('c'))));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
     fn invalid_empty() {
         let tokens = vec![];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_empty_brackets() {
+        let tokens = vec![s('('), s('('), s(')'), s(')')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_brackets() {
+        let tokens = vec![s('('), s('('), l('a'), s(')')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_quantifier() {
+        let tokens = vec![l('a'), s('|'), s('*')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_double_quantifier() {
+        let tokens = vec![l('a'), s('*'), s('*')];
         let ast = parse(&tokens);
         assert!(ast.is_err());
     }
