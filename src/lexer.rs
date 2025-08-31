@@ -51,8 +51,9 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
                     return Err("Expected hex character");
                 }
 
-                if n == 1 {
-                    out.push(Literal(char::from_u32(num).unwrap()));
+                if n <= 1 {
+                    let c = char::from_u32(num).ok_or("Invalid char")?;
+                    out.push(Literal(c));
                     num = 0;
                     Normal
                 } else {
