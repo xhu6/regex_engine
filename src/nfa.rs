@@ -20,11 +20,12 @@ impl Graph {
     }
 
     fn add_edge(&mut self, start: usize, end: usize, value: char) {
+        // Add an edge with a value
         self.nodes[start].edges.push((Some(value), end));
     }
 
-    // Epsilon
     fn add_e(&mut self, start: usize, end: usize) {
+        // Add an epsilon edge
         self.nodes[start].edges.push((None, end));
     }
 }
@@ -103,12 +104,12 @@ struct Set {
 impl Set {
     fn new(n: usize) -> Self {
         Self {
-            usizes: vec![],
+            usizes: Vec::with_capacity(10),
             bools: vec![false; n],
         }
     }
 
-    fn add(&mut self, value: usize) {
+    fn insert(&mut self, value: usize) {
         if self.bools[value] {
             return;
         }
@@ -121,8 +122,9 @@ impl Set {
         self.bools[value]
     }
 
-    fn len(&self) -> usize {
-        self.bools.len()
+    fn clear(&mut self) {
+        self.bools.fill(false);
+        self.usizes.clear();
     }
 }
 
@@ -153,6 +155,8 @@ impl Display for Nfa {
     }
 }
 
+type State = Set;
+
 impl Nfa {
     pub fn new(tree: Ast) -> Self {
         let mut graph = Graph::default();
@@ -160,12 +164,17 @@ impl Nfa {
         Self { graph, start, end }
     }
 
-    fn traverse(&self, node: usize, seen: &mut Set) {
+    fn create_state(&self) -> State {
+        State::new(self.graph.nodes.len())
+    }
+
+    fn traverse(&self, node: usize, seen: &mut State) {
+        // Performs DFS on reachable nodes via epsilon
         if seen.contains(node) {
             return;
         }
 
-        seen.add(node);
+        seen.insert(node);
 
         // Fine to iterate as graph is sparse
         for &(next_value, next_node) in &self.graph.nodes[node].edges {
@@ -175,40 +184,42 @@ impl Nfa {
         }
     }
 
-    fn update_epsilon(&self, state: &Set) -> Set {
-        let mut new_state = Set::new(state.len());
-
+    fn update_epsilon(&self, state: &mut State, tmp_state: &mut State) {
+        // Update state to account for epsilon transitions
         for &node in &state.usizes {
-            self.traverse(node, &mut new_state);
+            self.traverse(node, tmp_state);
         }
-
-        new_state
     }
 
-    fn update_value(&self, state: &Set, value: char) -> Set {
-        let mut new_state = Set::new(state.len());
-
+    fn update_value(&self, state: &mut State, value: char, tmp_state: &mut State) {
+        // Update state by consuming char
         for &node in &state.usizes {
             for &(next_value, next_node) in &self.graph.nodes[node].edges {
                 if Some(value) == next_value {
-                    new_state.add(next_node);
+                    tmp_state.insert(next_node);
                 }
             }
         }
-
-        new_state
     }
 
     pub fn check(&self, inp: &str) -> bool {
-        let mut state = Set::new(self.graph.nodes.len());
-        state.add(self.start);
-        state = self.update_epsilon(&state);
+        let mut state = self.create_state();
+        let mut tmp_state = self.create_state();
 
+        state.insert(self.start);
+
+        self.update_epsilon(&mut state, &mut tmp_state);
+        state.clear();
+
+        // For some reason, `swap` is very slow so do it manually
         for c in inp.chars() {
-            state = self.update_value(&state, c);
-            state = self.update_epsilon(&state);
+            self.update_value(&mut tmp_state, c, &mut state);
+            tmp_state.clear();
+
+            self.update_epsilon(&mut state, &mut tmp_state);
+            state.clear();
         }
 
-        state.contains(self.end)
+        tmp_state.contains(self.end)
     }
 }
