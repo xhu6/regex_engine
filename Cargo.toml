@@ -3,4 +3,15 @@ name = "regex_engine"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+bench = false
+
 [dependencies]
+
+[dev-dependencies]
+criterion = "0.7.0"
+regex = "1.11.2"
+
+[[bench]]
+name = "benchmark"
+harness = false
