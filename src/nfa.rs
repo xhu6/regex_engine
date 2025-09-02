@@ -8,15 +8,17 @@ fn build(tree: Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
     use BinOp::*;
     use UnOp::*;
 
-    let start = graph.new_node();
-
-    let end = match tree {
+    match tree {
         Sym(x) => {
+            let start = graph.new_node();
             let end = graph.new_node();
+
             graph.add_edge(start, end, Some(x));
-            end
+
+            (start, end)
         }
         Unary(op, t) => {
+            let start = graph.new_node();
             let nfa = build(*t, graph);
 
             match op {
@@ -24,27 +26,29 @@ fn build(tree: Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
                     graph.add_e(start, nfa.0);
                     graph.add_e(start, nfa.1);
 
-                    nfa.1
+                    (start, nfa.1)
                 }
                 Plus => {
                     graph.add_e(start, nfa.0);
                     graph.add_e(nfa.1, start);
 
-                    nfa.1
+                    (start, nfa.1)
                 }
                 Star => {
                     graph.add_e(start, nfa.0);
                     graph.add_e(nfa.1, start);
 
-                    nfa.0
+                    (start, start)
                 }
             }
         }
         Binary(op, t, u) => {
             let nfa = build(*t, graph);
             let nfa2 = build(*u, graph);
+
             match op {
                 Union => {
+                    let start = graph.new_node();
                     let end = graph.new_node();
 
                     graph.add_e(start, nfa.0);
@@ -53,19 +57,17 @@ fn build(tree: Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
                     graph.add_e(nfa.1, end);
                     graph.add_e(nfa2.1, end);
 
-                    end
+                    (start, end)
                 }
+
                 Concat => {
-                    graph.add_e(start, nfa.0);
                     graph.add_e(nfa.1, nfa2.0);
 
-                    nfa2.1
+                    (nfa.0, nfa2.1)
                 }
             }
         }
-    };
-
-    (start, end)
+    }
 }
 
 struct Set {
@@ -101,6 +103,24 @@ impl Set {
     }
 }
 
+type State = Set;
+
+fn traverse<T>(graph: &Graph<Option<T>>, node: usize, seen: &mut State) {
+    // Performs DFS on reachable nodes via epsilon
+    if seen.contains(node) {
+        return;
+    }
+
+    seen.insert(node);
+
+    // Fine to iterate as graph is sparse
+    for edge in &graph.nodes[node].edges {
+        if edge.0.is_none() {
+            traverse(graph, edge.1, seen);
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Nfa {
     graph: Graph<Option<char>>,
@@ -128,8 +148,6 @@ impl Display for Nfa {
     }
 }
 
-type State = Set;
-
 impl Nfa {
     pub fn new(tree: Ast) -> Self {
         let mut graph = Graph::default();
@@ -139,29 +157,13 @@ impl Nfa {
     }
 
     fn create_state(&self) -> State {
-        State::new(self.graph.nodes.len())
-    }
-
-    fn traverse(&self, node: usize, seen: &mut State) {
-        // Performs DFS on reachable nodes via epsilon
-        if seen.contains(node) {
-            return;
-        }
-
-        seen.insert(node);
-
-        // Fine to iterate as graph is sparse
-        for &(next_value, next_node) in &self.graph.nodes[node].edges {
-            if next_value.is_none() {
-                self.traverse(next_node, seen);
-            }
-        }
+        State::new(self.graph.len())
     }
 
     fn update_epsilon(&self, state: &State, tmp_state: &mut State) {
         // Update state to account for epsilon transitions
         for &node in &state.usizes {
-            self.traverse(node, tmp_state);
+            traverse(&self.graph, node, tmp_state);
         }
     }
 

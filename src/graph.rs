@@ -1,4 +1,4 @@
-type Edge<T> = (T, usize);
+pub type Edge<T> = (T, usize);
 
 #[derive(Debug)]
 pub struct Node<T> {
@@ -12,9 +12,16 @@ impl<T> Default for Node<T> {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Graph<T> {
     pub nodes: Vec<Node<T>>,
+}
+
+impl<T> Default for Graph<T> {
+    // Apparently having all fields impl Default isn't enough??
+    fn default() -> Self {
+        Self { nodes: Vec::new() }
+    }
 }
 
 impl<T> Graph<T> {
@@ -27,6 +34,10 @@ impl<T> Graph<T> {
     pub fn add_edge(&mut self, start: usize, end: usize, value: T) {
         // Add an edge with a value
         self.nodes[start].edges.push((value, end));
+    }
+
+    pub fn len(&self) -> usize {
+        self.nodes.len()
     }
 }
 
