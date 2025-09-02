@@ -1,4 +1,5 @@
 mod ast;
+mod graph;
 mod lexer;
 mod nfa;
 mod parser;

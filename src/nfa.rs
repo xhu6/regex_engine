@@ -1,36 +1,9 @@
 use std::fmt::Display;
 
 use crate::ast::*;
+use crate::graph::Graph;
 
-#[derive(Default, Debug)]
-struct Node {
-    edges: Vec<(Option<char>, usize)>,
-}
-
-#[derive(Default, Debug)]
-struct Graph {
-    nodes: Vec<Node>,
-}
-
-impl Graph {
-    fn new_node(&mut self) -> usize {
-        self.nodes.push(Node::default());
-
-        self.nodes.len() - 1
-    }
-
-    fn add_edge(&mut self, start: usize, end: usize, value: char) {
-        // Add an edge with a value
-        self.nodes[start].edges.push((Some(value), end));
-    }
-
-    fn add_e(&mut self, start: usize, end: usize) {
-        // Add an epsilon edge
-        self.nodes[start].edges.push((None, end));
-    }
-}
-
-fn build(tree: Ast, graph: &mut Graph) -> (usize, usize) {
+fn build(tree: Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
     use Ast::*;
     use BinOp::*;
     use UnOp::*;
@@ -40,7 +13,7 @@ fn build(tree: Ast, graph: &mut Graph) -> (usize, usize) {
     let end = match tree {
         Sym(x) => {
             let end = graph.new_node();
-            graph.add_edge(start, end, x);
+            graph.add_edge(start, end, Some(x));
             end
         }
         Unary(op, t) => {
@@ -70,7 +43,6 @@ fn build(tree: Ast, graph: &mut Graph) -> (usize, usize) {
         Binary(op, t, u) => {
             let nfa = build(*t, graph);
             let nfa2 = build(*u, graph);
-
             match op {
                 Union => {
                     let end = graph.new_node();
@@ -97,6 +69,7 @@ fn build(tree: Ast, graph: &mut Graph) -> (usize, usize) {
 }
 
 struct Set {
+    // Set with efficient iter
     usizes: Vec<usize>,
     bools: Vec<bool>,
 }
@@ -130,7 +103,7 @@ impl Set {
 
 #[derive(Debug)]
 pub struct Nfa {
-    graph: Graph,
+    graph: Graph<Option<char>>,
     start: usize,
     end: usize,
 }
@@ -161,6 +134,7 @@ impl Nfa {
     pub fn new(tree: Ast) -> Self {
         let mut graph = Graph::default();
         let (start, end) = build(tree, &mut graph);
+
         Self { graph, start, end }
     }
 
@@ -184,14 +158,14 @@ impl Nfa {
         }
     }
 
-    fn update_epsilon(&self, state: &mut State, tmp_state: &mut State) {
+    fn update_epsilon(&self, state: &State, tmp_state: &mut State) {
         // Update state to account for epsilon transitions
         for &node in &state.usizes {
             self.traverse(node, tmp_state);
         }
     }
 
-    fn update_value(&self, state: &mut State, value: char, tmp_state: &mut State) {
+    fn update_value(&self, state: &State, value: char, tmp_state: &mut State) {
         // Update state by consuming char
         for &node in &state.usizes {
             for &(next_value, next_node) in &self.graph.nodes[node].edges {
@@ -208,15 +182,15 @@ impl Nfa {
 
         state.insert(self.start);
 
-        self.update_epsilon(&mut state, &mut tmp_state);
+        self.update_epsilon(&state, &mut tmp_state);
         state.clear();
 
         // For some reason, `swap` is very slow so do it manually
         for c in inp.chars() {
-            self.update_value(&mut tmp_state, c, &mut state);
+            self.update_value(&tmp_state, c, &mut state);
             tmp_state.clear();
 
-            self.update_epsilon(&mut state, &mut tmp_state);
+            self.update_epsilon(&state, &mut tmp_state);
             state.clear();
         }
 
