@@ -1,6 +1,6 @@
 # Regex engine in Rust
 
-Matches text against a pattern using a lazy NFA.
+Matches text against a pattern using a NFA in linear time (w.r.t haystack length).
 
 ## Parsing
 
@@ -13,18 +13,22 @@ The precendence of operations is... (top is highest)
 - Union
 
 The parser uses these production rules:
-```
+```rs
+// Union
 A -> B|A
 A -> B
 
+// Concatenation
 B -> CB
 B -> C
 
+// Quantifiers
 C -> D+
 C -> D?
 C -> D*
 C -> D
 
+// Expressions
 D -> (A)
 D -> Literal
 ```
