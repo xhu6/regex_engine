@@ -22,6 +22,13 @@ fn match_quantifiers() {
 }
 
 #[test]
+fn match_range_quantifiers() {
+    let r = Regex::new("(a{2,}b{2,4}c{1,})*");
+    let res = r.check("aabbcaaaabbbbccc");
+    assert!(res);
+}
+
+#[test]
 fn match_union() {
     let r = Regex::new("one|two|three");
     let res = r.check("two");
@@ -33,4 +40,11 @@ fn match_brackets() {
     let r = Regex::new("(b|c|d)at?");
     let res = r.check("cat");
     assert!(res);
+}
+
+#[test]
+fn match_literal_fail() {
+    let r = Regex::new("the");
+    let res = r.check("there");
+    assert!(!res);
 }

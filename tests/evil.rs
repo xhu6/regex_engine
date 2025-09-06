@@ -41,3 +41,10 @@ fn evil_repeated_pattern_fail() {
     let res = r.check("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab");
     assert!(!res);
 }
+
+#[test]
+fn evil_fixed_quantifier_fail() {
+    let r = Regex::new("(a|b)*b(b|a){16}");
+    let res = r.check("aaaaaaaaaaaaaaaabaaaaaaaaabaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac");
+    assert!(!res);
+}

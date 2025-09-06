@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::ast::*;
 use crate::graph::Graph;
 
-fn build(tree: Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
+fn build(tree: &Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
     use Ast::*;
     use BinOp::*;
     use UnOp::*;
@@ -13,38 +13,63 @@ fn build(tree: Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
             let start = graph.new_node();
             let end = graph.new_node();
 
-            graph.add_edge(start, end, Some(x));
+            graph.add_edge(start, end, Some(*x));
 
             (start, end)
         }
-        Unary(op, t) => {
-            let start = graph.new_node();
-            let nfa = build(*t, graph);
 
-            match op {
-                Question => {
-                    graph.add_e(start, nfa.0);
-                    graph.add_e(start, nfa.1);
+        Unary(op, t) => match op {
+            Range(lower, Some(upper)) => {
+                let start = graph.new_node();
+                let end = graph.new_node();
+                let mut cur = start;
 
-                    (start, nfa.1)
+                // Build chain of NFA `lower` times
+                for _ in 0..*lower {
+                    let nfa = build(t, graph);
+                    graph.add_e(cur, nfa.0);
+                    cur = nfa.1;
                 }
-                Plus => {
-                    graph.add_e(start, nfa.0);
-                    graph.add_e(nfa.1, start);
 
-                    (start, nfa.1)
-                }
-                Star => {
-                    graph.add_e(start, nfa.0);
-                    graph.add_e(nfa.1, start);
+                graph.add_e(cur, end);
 
-                    (start, start)
+                // Doesn't do anything if upper < lower
+                // Optimised to jump to end if fail
+                for _ in *lower..*upper {
+                    let nfa = build(t, graph);
+                    graph.add_e(cur, nfa.0);
+                    cur = nfa.1;
+                    graph.add_e(cur, end);
                 }
+
+                (start, end)
             }
-        }
+
+            Range(lower, None) => {
+                let nfa = build(t, graph);
+
+                let start = graph.new_node();
+                graph.add_e(start, nfa.0);
+
+                // Can get away with reusing start node for {0,}
+                let end = if *lower == 0 {
+                    start
+                } else {
+                    let end = graph.new_node();
+                    graph.add_e(end, start);
+
+                    end
+                };
+
+                graph.add_e(nfa.1, end);
+
+                (start, end)
+            }
+        },
+
         Binary(op, t, u) => {
-            let nfa = build(*t, graph);
-            let nfa2 = build(*u, graph);
+            let nfa = build(t, graph);
+            let nfa2 = build(u, graph);
 
             match op {
                 Union => {
@@ -149,7 +174,7 @@ impl Display for Nfa {
 }
 
 impl Nfa {
-    pub fn new(tree: Ast) -> Self {
+    pub fn new(tree: &Ast) -> Self {
         let mut graph = Graph::default();
         let (start, end) = build(tree, &mut graph);
 

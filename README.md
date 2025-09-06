@@ -13,22 +13,19 @@ The precendence of operations is... (top is highest)
 - Union
 
 The parser uses these production rules:
-```rs
-// Union
-A -> B|A
-A -> B
+```ebnf
+(* Union *)
+regex = a_exp {"|" a_exp}
 
-// Concatenation
-B -> CB
-B -> C
+(* Concatenation *)
+a_exp = b_exp {b_exp}
 
-// Quantifiers
-C -> D+
-C -> D?
-C -> D*
-C -> D
+b_exp = unit quantifier
 
-// Expressions
-D -> (A)
-D -> Literal
+unit = literal | "(" regex ")";
+
+quantifier = "?" | "*" | "+"
+           | "{" numeral "}"
+           | "{" numeral "," [numeral] "}" 
+(* Upper range defaults to inf *)
 ```

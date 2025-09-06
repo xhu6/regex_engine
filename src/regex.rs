@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use crate::lexer::*;
-use crate::nfa::*;
-use crate::parser::*;
+use crate::lexer::lexer;
+use crate::nfa::Nfa;
+use crate::parser::parse;
 
 pub struct Regex {
     nfa: Nfa,
@@ -18,7 +18,8 @@ impl Regex {
     pub fn new(pattern: &str) -> Self {
         let tokens = lexer(pattern).unwrap();
         let ast = parse(&tokens).unwrap();
-        let nfa = Nfa::new(ast);
+        let nfa = Nfa::new(&ast);
+
         Self { nfa }
     }
 

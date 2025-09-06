@@ -6,14 +6,15 @@ enum LexerMode {
     Hex(u8),
 }
 
+const SYNTAX: &str = "|?+*{}()\\";
+
 pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
     use LexerMode::*;
     use Token::*;
 
-    let syntax = "|?+*()\\";
+    let mut num = 0u32;
 
     let mut out = vec![];
-    let mut num: u32 = 0;
     let mut mode = Normal;
 
     for c in input.chars() {
@@ -21,7 +22,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
             Normal => {
                 if c == '\\' {
                     Escaped
-                } else if syntax.contains(c) {
+                } else if SYNTAX.contains(c) {
                     out.push(Syntax(c as u8));
                     Normal
                 } else {
@@ -32,10 +33,12 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
 
             Escaped => {
                 if c == 'x' {
+                    num = 0;
                     Hex(2)
                 } else if c == 'u' {
+                    num = 0;
                     Hex(4)
-                } else if syntax.contains(c) {
+                } else if SYNTAX.contains(c) {
                     out.push(Literal(c));
                     Normal
                 } else {
@@ -54,7 +57,6 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
                 if n <= 1 {
                     let c = char::from_u32(num).ok_or("Invalid char")?;
                     out.push(Literal(c));
-                    num = 0;
                     Normal
                 } else {
                     Hex(n - 1)

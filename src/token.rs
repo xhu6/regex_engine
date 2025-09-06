@@ -1,18 +1,5 @@
-use std::fmt::Display;
-
 #[derive(Eq, PartialEq, Debug)]
 pub enum Token {
     Literal(char),
     Syntax(u8),
-}
-
-impl Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Token::*;
-
-        match self {
-            Literal(x) => write!(f, "{x}"),
-            Syntax(x) => write!(f, "{}", x),
-        }
-    }
 }
