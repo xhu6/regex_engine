@@ -12,7 +12,7 @@ fn compactify_forward<T>(graph: &mut Graph<Option<T>>, end: usize) {
     // Don't skip past end state
     cache[end] = Some(end);
 
-    fn only_epsilon<T>(e: &Vec<(Option<T>, usize)>) -> bool {
+    fn only_epsilon<T>(e: &[(Option<T>, usize)]) -> bool {
         e.len() == 1 && e[0].0.is_none()
     }
 
@@ -59,7 +59,7 @@ fn compactify_backward<T: Clone>(graph: &mut Graph<Option<T>>, end: usize) {
             .iter()
             .flat_map(|x| graph.nodes[*x].edges.iter())
             .filter(|x| x.0.is_some() || x.1 == end)
-            .map(|x| x.clone())
+            .cloned()
             .collect();
 
         graph.nodes[node].edges = edges;
