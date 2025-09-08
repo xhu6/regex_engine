@@ -15,17 +15,17 @@ The precendence of operations is... (top is highest)
 The parser uses these production rules:
 ```ebnf
 (* Union *)
-regex = a_exp {"|" a_exp}
+regex = a_exp {"|" a_exp};
 
 (* Concatenation *)
-a_exp = b_exp {b_exp}
+a_exp = b_exp {b_exp};
 
-b_exp = unit quantifier
+b_exp = unit quantifier;
 
 unit = literal | "(" regex ")";
 
 quantifier = "?" | "*" | "+"
            | "{" numeral "}"
-           | "{" numeral "," [numeral] "}" 
+           | "{" numeral "," [numeral] "}";
 (* Upper range defaults to inf *)
 ```
