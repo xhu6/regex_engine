@@ -1,149 +1,29 @@
 use std::fmt::Display;
 
-use crate::ast::*;
 use crate::graph::Graph;
+use crate::set::Set as State;
 
-fn build(tree: &Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
-    use Ast::*;
-    use BinOp::*;
-    use UnOp::*;
+fn update_epsilon<T>(graph: &Graph<Option<T>>, input: &State, output: &mut State) {
+    // Update state to account for epsilon transitions.
+    for &node in &input.usizes {
+        graph.traverse(node, output);
+    }
+}
 
-    match tree {
-        Sym(x) => {
-            let start = graph.new_node();
-            let end = graph.new_node();
-
-            graph.add_edge(start, end, Some(*x));
-
-            (start, end)
-        }
-
-        Unary(op, t) => match op {
-            Range(lower, Some(upper)) => {
-                let start = graph.new_node();
-                let end = graph.new_node();
-                let mut cur = start;
-
-                // Build chain of NFA `lower` times
-                for _ in 0..*lower {
-                    let nfa = build(t, graph);
-                    graph.add_e(cur, nfa.0);
-                    cur = nfa.1;
-                }
-
-                graph.add_e(cur, end);
-
-                // Doesn't do anything if upper < lower
-                // Optimised to jump to end if fail
-                for _ in *lower..*upper {
-                    let nfa = build(t, graph);
-                    graph.add_e(cur, nfa.0);
-                    cur = nfa.1;
-                    graph.add_e(cur, end);
-                }
-
-                (start, end)
-            }
-
-            Range(lower, None) => {
-                let nfa = build(t, graph);
-
-                let start = graph.new_node();
-                graph.add_e(start, nfa.0);
-
-                // Can get away with reusing start node for {0,}
-                let end = if *lower == 0 {
-                    start
-                } else {
-                    let end = graph.new_node();
-                    graph.add_e(end, start);
-
-                    end
-                };
-
-                graph.add_e(nfa.1, end);
-
-                (start, end)
-            }
-        },
-
-        Binary(op, t, u) => {
-            let nfa = build(t, graph);
-            let nfa2 = build(u, graph);
-
-            match op {
-                Union => {
-                    let start = graph.new_node();
-                    let end = graph.new_node();
-
-                    graph.add_e(start, nfa.0);
-                    graph.add_e(start, nfa2.0);
-
-                    graph.add_e(nfa.1, end);
-                    graph.add_e(nfa2.1, end);
-
-                    (start, end)
-                }
-
-                Concat => {
-                    graph.add_e(nfa.1, nfa2.0);
-
-                    (nfa.0, nfa2.1)
-                }
+fn update_value<T: Eq>(graph: &Graph<T>, input: &State, value: T, output: &mut State) {
+    // Update state by consuming value.
+    for &node in &input.usizes {
+        for (next_value, next_node) in &graph.nodes[node].edges {
+            if &value == next_value {
+                output.insert(*next_node);
             }
         }
     }
 }
 
-struct Set {
-    // Set with efficient iter
-    usizes: Vec<usize>,
-    bools: Vec<bool>,
-}
-
-impl Set {
-    fn new(n: usize) -> Self {
-        Self {
-            usizes: Vec::with_capacity(10),
-            bools: vec![false; n],
-        }
-    }
-
-    fn insert(&mut self, value: usize) {
-        if self.bools[value] {
-            return;
-        }
-
-        self.bools[value] = true;
-        self.usizes.push(value);
-    }
-
-    fn contains(&self, value: usize) -> bool {
-        self.bools[value]
-    }
-
-    fn clear(&mut self) {
-        self.bools.fill(false);
-        self.usizes.clear();
-    }
-}
-
-type State = Set;
-
-fn traverse<T>(graph: &Graph<Option<T>>, node: usize, seen: &mut State) {
-    // Performs DFS on reachable nodes via epsilon
-    if seen.contains(node) {
-        return;
-    }
-
-    seen.insert(node);
-
-    // Fine to iterate as graph is sparse
-    for edge in &graph.nodes[node].edges {
-        if edge.0.is_none() {
-            traverse(graph, edge.1, seen);
-        }
-    }
+fn update_char(graph: &Graph<Option<char>>, input: &State, value: char, output: &mut State) {
+    // Update state by consuming value.
+    update_value(graph, input, Some(value), output);
 }
 
 #[derive(Debug)]
@@ -174,33 +54,12 @@ impl Display for Nfa {
 }
 
 impl Nfa {
-    pub fn new(tree: &Ast) -> Self {
-        let mut graph = Graph::default();
-        let (start, end) = build(tree, &mut graph);
-
-        Self { graph, start, end }
+    pub fn new(graph: Graph<Option<char>>, start: usize, end: usize) -> Self {
+        Nfa { graph, start, end }
     }
 
     fn create_state(&self) -> State {
         State::new(self.graph.len())
-    }
-
-    fn update_epsilon(&self, state: &State, tmp_state: &mut State) {
-        // Update state to account for epsilon transitions
-        for &node in &state.usizes {
-            traverse(&self.graph, node, tmp_state);
-        }
-    }
-
-    fn update_value(&self, state: &State, value: char, tmp_state: &mut State) {
-        // Update state by consuming char
-        for &node in &state.usizes {
-            for &(next_value, next_node) in &self.graph.nodes[node].edges {
-                if Some(value) == next_value {
-                    tmp_state.insert(next_node);
-                }
-            }
-        }
     }
 
     pub fn check(&self, inp: &str) -> bool {
@@ -209,15 +68,15 @@ impl Nfa {
 
         state.insert(self.start);
 
-        self.update_epsilon(&state, &mut tmp_state);
+        update_epsilon(&self.graph, &state, &mut tmp_state);
         state.clear();
 
         // For some reason, `swap` is very slow so do it manually
         for c in inp.chars() {
-            self.update_value(&tmp_state, c, &mut state);
+            update_char(&self.graph, &tmp_state, c, &mut state);
             tmp_state.clear();
 
-            self.update_epsilon(&state, &mut tmp_state);
+            update_epsilon(&self.graph, &state, &mut tmp_state);
             state.clear();
         }
 

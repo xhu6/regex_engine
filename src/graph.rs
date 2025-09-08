@@ -1,3 +1,5 @@
+use crate::set::Set as State;
+
 pub type Edge<T> = (T, usize);
 
 #[derive(Debug)]
@@ -45,5 +47,21 @@ impl<T> Graph<Option<T>> {
     pub fn add_e(&mut self, start: usize, end: usize) {
         // Add an epsilon edge
         self.nodes[start].edges.push((None, end));
+    }
+
+    pub fn traverse(&self, node: usize, seen: &mut State) {
+        // Performs DFS on reachable nodes via epsilon.
+        if seen.contains(node) {
+            return;
+        }
+
+        seen.insert(node);
+
+        // Fine to iterate as graph is sparse
+        for edge in &self.nodes[node].edges {
+            if edge.0.is_none() {
+                self.traverse(edge.1, seen);
+            }
+        }
     }
 }

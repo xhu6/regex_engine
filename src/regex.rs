@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use crate::compiler::compile;
 use crate::lexer::lexer;
 use crate::nfa::Nfa;
 use crate::parser::parse;
@@ -18,7 +19,7 @@ impl Regex {
     pub fn new(pattern: &str) -> Self {
         let tokens = lexer(pattern).unwrap();
         let ast = parse(&tokens).unwrap();
-        let nfa = Nfa::new(&ast);
+        let nfa = compile(&ast);
 
         Self { nfa }
     }
