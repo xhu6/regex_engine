@@ -246,10 +246,19 @@ mod tests {
 
     #[test]
     fn brackets() {
-        let tokens = vec![l('a'), s('('), l('b'), s('|'), l('c'), s(')')];
+        let tokens = vec![
+            l('a'),
+            s('('),
+            l('b'),
+            s('|'),
+            l('c'),
+            s('|'),
+            l('d'),
+            s(')'),
+        ];
         let ast = parse(&tokens);
 
-        let expected = Ok(concat(sym('a'), union(sym('b'), sym('c'))));
+        let expected = Ok(concat(sym('a'), union(union(sym('b'), sym('c')), sym('d'))));
         assert_eq!(ast, expected);
     }
 

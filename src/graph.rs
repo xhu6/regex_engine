@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::set::Set as State;
 
 pub type Edge<T> = (T, usize);
@@ -63,5 +65,22 @@ impl<T> Graph<Option<T>> {
                 self.traverse(edge.1, seen);
             }
         }
+    }
+}
+
+impl<T: Display> Display for Graph<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (idx, node) in self.nodes.iter().enumerate() {
+            write!(f, "{idx}: ")?;
+
+            for (value, next_node) in &node.edges {
+                write!(f, "{value}_")?;
+                write!(f, "{next_node} ")?;
+            }
+
+            writeln!(f)?;
+        }
+
+        write!(f, "")
     }
 }
