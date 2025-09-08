@@ -2,8 +2,8 @@ use std::hint::black_box;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 
-const PATTERN: &str = "(a|å|b){16}b+(b|å|a){16}";
-const TEXT: &str = "abbabababababbabbbbbbbbbbbbbabbbbabababaaaa";
+const PATTERN: &str = "((b|a)+){16}";
+const TEXT: &str = "abbabababababbabbbababababbaabbbabbbabababbababababbbbabababaaaa";
 
 pub fn regex_engine_bench(c: &mut Criterion) {
     use regex_engine::Regex;

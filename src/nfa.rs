@@ -48,8 +48,12 @@ impl Nfa {
         state.insert(self.start);
 
         // For some reason, `mem::swap` is very slow
-        for c in inp.chars().enumerate() {
-            update_value(&self.graph, state, c.1, state2);
+        for c in inp.chars() {
+            if state.usizes.is_empty() {
+                return false;
+            }
+
+            update_value(&self.graph, state, c, state2);
             state.clear();
             (state, state2) = (state2, state);
         }
