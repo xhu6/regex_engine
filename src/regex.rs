@@ -27,4 +27,8 @@ impl Regex {
     pub fn check(&self, text: &str) -> bool {
         self.nfa.check(text)
     }
+
+    pub fn has_match(&self, text: &str) -> bool {
+        self.nfa.has_match(text)
+    }
 }

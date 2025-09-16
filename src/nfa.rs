@@ -47,7 +47,6 @@ impl Nfa {
 
         state.insert(self.start);
 
-        // For some reason, `mem::swap` is very slow
         for c in inp.chars() {
             if state.usizes.is_empty() {
                 return false;
@@ -56,6 +55,30 @@ impl Nfa {
             update_value(&self.graph, state, c, state2);
             state.clear();
             (state, state2) = (state2, state);
+        }
+
+        self.ends.iter().any(|x| state.contains(*x))
+    }
+
+    pub fn has_match(&self, inp: &str) -> bool {
+        let mut _state = self.create_state();
+        let mut _state2 = self.create_state();
+
+        let mut state = &mut _state;
+        let mut state2 = &mut _state2;
+
+        state.insert(self.start);
+
+        for c in inp.chars() {
+            if self.ends.iter().any(|x| state.contains(*x)) {
+                return true;
+            }
+
+            update_value(&self.graph, state, c, state2);
+            state.clear();
+            (state, state2) = (state2, state);
+
+            state.insert(self.start);
         }
 
         self.ends.iter().any(|x| state.contains(*x))
