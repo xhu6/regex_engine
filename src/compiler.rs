@@ -20,53 +20,52 @@ fn build(tree: &Ast, graph: &mut Graph<Option<Value>>) -> (usize, usize) {
         }
 
         Unary(op, t) => match op {
-            Range(lower, Some(upper)) => {
+            Range(lower, upper) => {
                 let start = graph.new_node();
-                let end = graph.new_node();
                 let mut cur = start;
+                let mut prev = None;
 
                 // Build chain of NFA `lower` times
                 for _ in 0..*lower {
                     let nfa = build(t, graph);
                     graph.add_e(cur, nfa.0);
+                    prev = Some(cur);
                     cur = nfa.1;
                 }
 
-                graph.add_e(cur, end);
+                match upper {
+                    Some(upper) => {
+                        let end = graph.new_node();
+                        graph.add_e(cur, end);
 
-                // Doesn't do anything extra if upper < lower
-                // Should be validated in parser anyway
-                for _ in *lower..*upper {
-                    let nfa = build(t, graph);
-                    graph.add_e(cur, nfa.0);
-                    cur = nfa.1;
+                        // Doesn't do anything extra if upper < lower
+                        // Should be validated in parser anyway
+                        for _ in *lower..*upper {
+                            let nfa = build(t, graph);
+                            graph.add_e(cur, nfa.0);
+                            cur = nfa.1;
 
-                    // Optimised to jump to end if fail
-                    graph.add_e(cur, end);
+                            // Optimised to jump to end if fail
+                            graph.add_e(cur, end);
+                        }
+
+                        (start, end)
+                    }
+
+                    None if prev.is_some() => {
+                        graph.add_e(cur, prev.unwrap());
+                        (start, cur)
+                    }
+
+                    // {0,} Special case
+                    None => {
+                        let nfa = build(t, graph);
+                        graph.add_e(start, nfa.0);
+                        graph.add_e(nfa.1, start);
+
+                        (start, start)
+                    }
                 }
-
-                (start, end)
-            }
-
-            Range(lower, None) => {
-                let nfa = build(t, graph);
-
-                let start = graph.new_node();
-                graph.add_e(start, nfa.0);
-
-                // Can get away with reusing start node for {0,}
-                let end = if *lower == 0 {
-                    start
-                } else {
-                    let end = graph.new_node();
-                    graph.add_e(end, start);
-
-                    end
-                };
-
-                graph.add_e(nfa.1, end);
-
-                (start, end)
             }
         },
 

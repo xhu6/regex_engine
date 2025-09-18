@@ -37,7 +37,7 @@ fn search_pattern() {
 
 #[test]
 fn search_fail() {
-    let r = Regex::new("[0-9]{3}");
+    let r = Regex::new("[0-9]{3,}");
     let res = r.search("01, 23, 45, 67");
     assert_eq!(res, None)
 }

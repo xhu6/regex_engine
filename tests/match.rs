@@ -29,6 +29,32 @@ fn match_range_quantifiers() {
 }
 
 #[test]
+fn match_unbounded_quantifier() {
+    let r = Regex::new("a{3,}");
+    assert!(!r.check(""));
+    assert!(!r.check("a"));
+    assert!(!r.check("aa"));
+
+    assert!(r.check("aaa"));
+    assert!(r.check("aaaa"));
+}
+
+#[test]
+fn match_bounded_quantifier() {
+    let r = Regex::new("[0-9]{3,5}");
+    assert!(!r.check(""));
+    assert!(!r.check("1"));
+    assert!(!r.check("12"));
+
+    assert!(r.check("123"));
+    assert!(r.check("1234"));
+    assert!(r.check("12345"));
+
+    assert!(!r.check("123456"));
+    assert!(!r.check("123457"));
+}
+
+#[test]
 fn match_union() {
     let r = Regex::new("one|two|three");
     let res = r.check("two");
