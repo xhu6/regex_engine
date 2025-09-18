@@ -25,10 +25,17 @@ impl Regex {
     }
 
     pub fn check(&self, text: &str) -> bool {
+        // Checks the text is a match.
         self.nfa.check(text)
     }
 
     pub fn has_match(&self, text: &str) -> bool {
+        // Checks whether text contains a match.
         self.nfa.has_match(text)
+    }
+
+    pub fn search(&self, text: &str) -> Option<(usize, usize)> {
+        // Finds the earliest shortest match, treating quantifiers as lazy.
+        self.nfa.search(text)
     }
 }
