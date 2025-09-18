@@ -2,10 +2,24 @@
 
 Matches text against a pattern using a NFA in linear time to haystack length.
 
+Usage:
+```rs
+let r = Regex::new("[0-9]{3,}");
+
+// Full match
+assert!(r.check("123"));
+
+// Partial match
+assert!(r.has_match("abc 123 def"));
+
+// Search
+assert_eq!(r.search("abc 123 def"), Some((4, 7)));
+```
+
 Engine features:
-- Check text fully matches
-- Check text contains a match
-- Search text for a match
+- Check text fully matches `check`
+- Check text contains a match `has_match`
+- Search text for a match `search`
 
 Regex features:
 - Character classes

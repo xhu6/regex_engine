@@ -1,8 +1,14 @@
 use regex_engine::*;
 
 fn main() {
-    // Test evil regex
-    let r = Regex::new("a{3,}");
-    let res = r.check("a");
-    println!("{res}");
+    let r = Regex::new("[0-9]{3,}");
+
+    // Full match
+    assert!(r.check("123"));
+
+    // Partial match
+    assert!(r.has_match("abc 123 def"));
+
+    // Search
+    assert_eq!(r.search("abc 123 def"), Some((4, 7)));
 }
