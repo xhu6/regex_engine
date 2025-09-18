@@ -4,9 +4,11 @@ enum LexerMode {
     Normal,
     Escaped,
     Hex(u8),
+    Class,
+    ClassEscaped,
 }
 
-const SYNTAX: &str = "|?+*{}()\\";
+const SYNTAX: &str = "|?+*{}()[]\\";
 
 pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
     use LexerMode::*;
@@ -22,6 +24,9 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
             Normal => {
                 if c == '\\' {
                     Escaped
+                } else if c == '[' {
+                    out.push(Syntax(c as u8));
+                    Class
                 } else if SYNTAX.contains(c) {
                     out.push(Syntax(c as u8));
                     Normal
@@ -62,6 +67,26 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
                     Hex(n - 1)
                 }
             }
+
+            Class => {
+                if c == ']' {
+                    out.push(Syntax(b']'));
+                    Normal
+                } else if c == '-' {
+                    out.push(Syntax(b'-'));
+                    Class
+                } else if c == '\\' {
+                    ClassEscaped
+                } else {
+                    out.push(Literal(c));
+                    Class
+                }
+            }
+
+            ClassEscaped => {
+                out.push(Literal(c));
+                Class
+            }
         };
     }
 
@@ -69,6 +94,7 @@ pub fn lexer(input: &str) -> Result<Vec<Token>, &'static str> {
         Normal => Ok(out),
         Escaped => Err("Expected escape character"),
         Hex(_) => Err("Expected hex character"),
+        Class | ClassEscaped => Err("Incomplete class"),
     }
 }
 
@@ -138,6 +164,31 @@ mod tests {
     }
 
     #[test]
+    fn class_chars() {
+        let tokens = lexer("[abc\\-\\]]");
+        let expected = Ok(vec![s('['), l('a'), l('b'), l('c'), l('-'), l(']'), s(']')]);
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn class_ranges() {
+        let tokens = lexer("[a-z\\--\\]]");
+        let expected = Ok(vec![
+            s('['),
+            l('a'),
+            s('-'),
+            l('z'),
+            l('-'),
+            s('-'),
+            l(']'),
+            s(']'),
+        ]);
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
     fn invalid_hanging_escape() {
         assert!(lexer("abc\\").is_err());
     }
@@ -155,5 +206,10 @@ mod tests {
     #[test]
     fn invalid_hex() {
         assert!(lexer("abc\\xhh").is_err());
+    }
+
+    #[test]
+    fn invalid_class() {
+        assert!(lexer("[a").is_err());
     }
 }

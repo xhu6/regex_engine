@@ -22,7 +22,11 @@ a_exp = b_exp {b_exp};
 
 b_exp = unit quantifier;
 
-unit = literal | "(" regex ")";
+unit = literal
+     | "[" ["^"] span {span} "]"
+     | "(" regex ")";
+
+span = literal ["-" literal];
 
 quantifier = "?" | "*" | "+"
            | "{" numeral "}"

@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::value::Value;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum UnOp {
     Range(u32, Option<u32>),
@@ -13,7 +15,7 @@ pub enum BinOp {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Ast {
-    Sym(char),
+    Sym(Value),
     Unary(UnOp, Box<Ast>),
     Binary(BinOp, Box<Ast>, Box<Ast>),
 }

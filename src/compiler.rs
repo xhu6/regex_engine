@@ -2,8 +2,9 @@ use crate::ast::{Ast, BinOp, UnOp};
 use crate::graph::{Graph, Node};
 use crate::nfa::Nfa;
 use crate::set::Set as State;
+use crate::value::Value;
 
-fn build(tree: &Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
+fn build(tree: &Ast, graph: &mut Graph<Option<Value>>) -> (usize, usize) {
     use Ast::*;
     use BinOp::*;
     use UnOp::*;
@@ -13,7 +14,7 @@ fn build(tree: &Ast, graph: &mut Graph<Option<char>>) -> (usize, usize) {
             let start = graph.new_node();
             let end = graph.new_node();
 
-            graph.add_edge(start, end, Some(*x));
+            graph.add_edge(start, end, Some(x.clone()));
 
             (start, end)
         }
@@ -137,7 +138,7 @@ fn compactify_forward<T>(graph: &mut Graph<Option<T>>, end: usize) {
     }
 }
 
-fn compactify_backward<T: Copy>(
+fn compactify_backward<T: Clone>(
     graph: &mut Graph<Option<T>>,
     end: usize,
 ) -> (Graph<T>, Vec<usize>) {
@@ -163,7 +164,7 @@ fn compactify_backward<T: Copy>(
             .usizes
             .iter()
             .flat_map(|x| graph.nodes[*x].edges.iter())
-            .filter_map(|x| x.0.map(|y| (y, x.1)))
+            .filter_map(|x| x.0.clone().map(|y| (y, x.1)))
             .collect();
 
         out.nodes.push(Node { edges });
@@ -173,7 +174,7 @@ fn compactify_backward<T: Copy>(
     (out, ends)
 }
 
-fn compactify<T: Copy>(graph: &mut Graph<Option<T>>, end: usize) -> (Graph<T>, Vec<usize>) {
+fn compactify<T: Clone>(graph: &mut Graph<Option<T>>, end: usize) -> (Graph<T>, Vec<usize>) {
     // Skips epsilons.
     compactify_forward(graph, end);
     compactify_backward(graph, end)

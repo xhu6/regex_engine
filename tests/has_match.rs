@@ -29,6 +29,13 @@ fn has_match_quantifier() {
 }
 
 #[test]
+fn has_match_number() {
+    let r = Regex::new("[0-9]+");
+    let res = r.has_match("There are 7 days in a week");
+    assert!(res);
+}
+
+#[test]
 fn has_match_empty() {
     let r = Regex::new("b*");
     let res = r.has_match("aaaaaaaaaaaaaaaaa");

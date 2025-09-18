@@ -2,12 +2,13 @@ use std::fmt::Display;
 
 use crate::graph::Graph;
 use crate::set::Set as State;
+use crate::value::Value;
 
-fn update_value<T: Eq>(graph: &Graph<T>, input: &State, value: T, output: &mut State) {
+fn update_value(graph: &Graph<Value>, input: &State, value: char, output: &mut State) {
     // Update state by consuming value.
     for &node in &input.usizes {
         for (next_value, next_node) in &graph.nodes[node].edges {
-            if &value == next_value {
+            if next_value.matches(value) {
                 output.insert(*next_node);
             }
         }
@@ -16,7 +17,7 @@ fn update_value<T: Eq>(graph: &Graph<T>, input: &State, value: T, output: &mut S
 
 #[derive(Debug)]
 pub struct Nfa {
-    graph: Graph<char>,
+    graph: Graph<Value>,
     start: usize,
     ends: Vec<usize>,
 }
@@ -30,7 +31,7 @@ impl Display for Nfa {
 }
 
 impl Nfa {
-    pub fn new(graph: Graph<char>, start: usize, ends: Vec<usize>) -> Self {
+    pub fn new(graph: Graph<Value>, start: usize, ends: Vec<usize>) -> Self {
         Nfa { graph, start, ends }
     }
 

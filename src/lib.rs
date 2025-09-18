@@ -7,5 +7,6 @@ mod parser;
 mod regex;
 mod set;
 mod token;
+mod value;
 
 pub use regex::*;

@@ -6,6 +6,8 @@ use Token::*;
 use crate::ast::*;
 use UnOp::Range;
 
+use crate::value::Value;
+
 type P<'a> = Peekable<Iter<'a, Token>>;
 
 fn parse_union(tokens: &mut P) -> Result<Ast, ()> {
@@ -86,7 +88,7 @@ fn parse_quantifier(tokens: &mut P) -> Result<Ast, ()> {
 
 fn parse_unit(tokens: &mut P) -> Result<Ast, ()> {
     match tokens.next() {
-        Some(Literal(x)) => Ok(Ast::Sym(*x)),
+        Some(Literal(x)) => Ok(Ast::Sym(Value::Char(*x))),
         Some(Syntax(b'(')) => {
             let out = parse_union(tokens)?;
 
@@ -96,7 +98,53 @@ fn parse_unit(tokens: &mut P) -> Result<Ast, ()> {
 
             Ok(out)
         }
+        Some(Syntax(b'[')) => {
+            let inverse = tokens.peek() == Some(&&Literal('^'));
+
+            if inverse {
+                tokens.next();
+            }
+
+            let mut spans = vec![parse_span(tokens)?];
+            while tokens.peek() != Some(&&Syntax(b']')) {
+                if let Ok(span) = parse_span(tokens) {
+                    spans.push(span);
+                } else {
+                    return Err(());
+                }
+            }
+
+            tokens.next();
+
+            Ok(Ast::Sym(Value::class(&spans, inverse)))
+        }
         _ => Err(()),
+    }
+}
+
+fn parse_span(tokens: &mut P) -> Result<(char, char), ()> {
+    let start = match tokens.peek() {
+        Some(Literal(c)) => *c,
+        _ => return Err(()),
+    };
+
+    tokens.next();
+
+    let end = if tokens.peek() == Some(&&Syntax(b'-')) {
+        tokens.next();
+
+        match tokens.next() {
+            Some(Literal(c)) => *c,
+            _ => return Err(()),
+        }
+    } else {
+        start
+    };
+
+    if start > end {
+        Err(())
+    } else {
+        Ok((start, end))
     }
 }
 
@@ -141,8 +189,12 @@ mod tests {
         Syntax(a as u8)
     }
 
-    fn sym(a: char) -> Ast {
-        Ast::Sym(a)
+    fn char(a: char) -> Ast {
+        Ast::Sym(Value::Char(a))
+    }
+
+    fn class(spans: &[(char, char)], inverse: bool) -> Ast {
+        Ast::Sym(Value::class(spans, inverse))
     }
 
     #[test]
@@ -150,7 +202,7 @@ mod tests {
         let tokens = vec![l('a')];
         let ast = parse(&tokens);
 
-        let expected = Ok(sym('a'));
+        let expected = Ok(char('a'));
         assert_eq!(ast, expected);
     }
 
@@ -159,7 +211,7 @@ mod tests {
         let tokens = vec![l('a'), s('{'), l('5'), s('}')];
         let ast = parse(&tokens);
 
-        let expected = Ok(unary(Range(5, Some(5)), sym('a')));
+        let expected = Ok(unary(Range(5, Some(5)), char('a')));
         assert_eq!(ast, expected);
     }
 
@@ -168,7 +220,7 @@ mod tests {
         let tokens = vec![l('a'), s('{'), l('1'), l('2'), l(','), s('}')];
         let ast = parse(&tokens);
 
-        let expected = Ok(unary(Range(12, None), sym('a')));
+        let expected = Ok(unary(Range(12, None), char('a')));
         assert_eq!(ast, expected);
     }
 
@@ -186,7 +238,46 @@ mod tests {
         ];
         let ast = parse(&tokens);
 
-        let expected = Ok(unary(Range(12, Some(34)), sym('a')));
+        let expected = Ok(unary(Range(12, Some(34)), char('a')));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn alpha_class() {
+        let tokens = vec![
+            s('['),
+            l('A'),
+            s('-'),
+            l('Z'),
+            l('a'),
+            s('-'),
+            l('z'),
+            s(']'),
+        ];
+        let ast = parse(&tokens);
+
+        let spans = vec![('A', 'Z'), ('a', 'z')];
+        let expected = Ok(class(&spans, false));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn escaped_single_class() {
+        let tokens = vec![s('['), l('['), l('-'), l(']'), s(']')];
+        let ast = parse(&tokens);
+
+        let spans = vec![('[', '['), ('-', '-'), (']', ']')];
+        let expected = Ok(class(&spans, false));
+        assert_eq!(ast, expected);
+    }
+
+    #[test]
+    fn inverse_class() {
+        let tokens = vec![s('['), l('^'), l('a'), s('-'), l('z'), s(']')];
+        let ast = parse(&tokens);
+
+        let spans = vec![('a', 'z')];
+        let expected = Ok(class(&spans, true));
         assert_eq!(ast, expected);
     }
 
@@ -195,7 +286,7 @@ mod tests {
         let tokens = vec![l('a'), s('?')];
         let ast = parse(&tokens);
 
-        let expected = Ok(unary(Range(0, Some(1)), sym('a')));
+        let expected = Ok(unary(Range(0, Some(1)), char('a')));
         assert_eq!(ast, expected);
     }
 
@@ -204,7 +295,7 @@ mod tests {
         let tokens = vec![l('a'), s('*')];
         let ast = parse(&tokens);
 
-        let expected = Ok(unary(Range(0, None), sym('a')));
+        let expected = Ok(unary(Range(0, None), char('a')));
         assert_eq!(ast, expected);
     }
 
@@ -213,7 +304,7 @@ mod tests {
         let tokens = vec![l('a'), s('+')];
         let ast = parse(&tokens);
 
-        let expected = Ok(unary(Range(1, None), sym('a')));
+        let expected = Ok(unary(Range(1, None), char('a')));
         assert_eq!(ast, expected);
     }
 
@@ -222,7 +313,7 @@ mod tests {
         let tokens = vec![l('a'), s('|'), l('b')];
         let ast = parse(&tokens);
 
-        let expected = Ok(union(sym('a'), sym('b')));
+        let expected = Ok(union(char('a'), char('b')));
         assert_eq!(ast, expected);
     }
 
@@ -231,7 +322,7 @@ mod tests {
         let tokens = vec![l('a'), l('b'), l('c')];
         let ast = parse(&tokens);
 
-        let expected = Ok(concat(concat(sym('a'), sym('b')), sym('c')));
+        let expected = Ok(concat(concat(char('a'), char('b')), char('c')));
         assert_eq!(ast, expected);
     }
 
@@ -240,7 +331,7 @@ mod tests {
         let tokens = vec![l('a'), s('|'), l('b'), l('c')];
         let ast = parse(&tokens);
 
-        let expected = Ok(union(sym('a'), concat(sym('b'), sym('c'))));
+        let expected = Ok(union(char('a'), concat(char('b'), char('c'))));
         assert_eq!(ast, expected);
     }
 
@@ -258,7 +349,10 @@ mod tests {
         ];
         let ast = parse(&tokens);
 
-        let expected = Ok(concat(sym('a'), union(union(sym('b'), sym('c')), sym('d'))));
+        let expected = Ok(concat(
+            char('a'),
+            union(union(char('b'), char('c')), char('d')),
+        ));
         assert_eq!(ast, expected);
     }
 
@@ -277,7 +371,7 @@ mod tests {
 
         let ast = parse(&tokens);
 
-        let expected = Ok(union(sym('a'), concat(sym('b'), sym('c'))));
+        let expected = Ok(union(char('a'), concat(char('b'), char('c'))));
         assert_eq!(ast, expected);
     }
 
@@ -354,6 +448,55 @@ mod tests {
     #[test]
     fn invalid_closing_range() {
         let tokens = vec![l('a'), s('}')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_nonclosed_class() {
+        let tokens = vec![s('['), l('a')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_closing_class() {
+        let tokens = vec![l('a'), s(']')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_start_bounded_class() {
+        let tokens = vec![s('['), l('a'), s('-'), s(']')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_end_bounded_class() {
+        let tokens = vec![s('['), s('-'), l('a'), s(']')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_empty_class() {
+        let tokens = vec![s('['), s(']')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_everything_class() {
+        let tokens = vec![s('['), l('^'), s(']')];
+        let ast = parse(&tokens);
+        assert!(ast.is_err());
+    }
+
+    #[test]
+    fn invalid_reverse_class() {
+        let tokens = vec![s('['), l('z'), s('-'), l('a'), s(']')];
         let ast = parse(&tokens);
         assert!(ast.is_err());
     }
