@@ -40,11 +40,8 @@ impl Nfa {
     }
 
     pub fn check(&self, inp: &str) -> bool {
-        let mut _state = self.create_state();
-        let mut _state2 = self.create_state();
-
-        let mut state = &mut _state;
-        let mut state2 = &mut _state2;
+        let mut state = &mut self.create_state();
+        let mut state2 = &mut self.create_state();
 
         state.insert(self.start);
 
@@ -62,11 +59,8 @@ impl Nfa {
     }
 
     pub fn has_match(&self, inp: &str) -> bool {
-        let mut _state = self.create_state();
-        let mut _state2 = self.create_state();
-
-        let mut state = &mut _state;
-        let mut state2 = &mut _state2;
+        let mut state = &mut self.create_state();
+        let mut state2 = &mut self.create_state();
 
         state.insert(self.start);
 
