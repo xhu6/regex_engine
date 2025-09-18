@@ -1,6 +1,14 @@
 # Regex engine in Rust
 
-Matches text against a pattern using a NFA in linear time (w.r.t haystack length).
+Matches text against a pattern using a NFA in linear time to haystack length.
+
+Engine features:
+- Check text fully matches
+- Check text contains a match
+
+Regex features:
+- Character classes
+- Ranges
 
 ## Parsing
 
@@ -23,7 +31,7 @@ a_exp = b_exp {b_exp};
 b_exp = unit quantifier;
 
 unit = literal
-     | "[" ["^"] span {span} "]"
+     | "[" ["^"] span {span} "]" (* Character class *)
      | "(" regex ")";
 
 span = literal ["-" literal];
