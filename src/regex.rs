@@ -35,7 +35,7 @@ impl Regex {
     }
 
     pub fn search(&self, text: &str) -> Option<(usize, usize)> {
-        // Finds the earliest shortest match, treating quantifiers as lazy.
+        // Finds the earliest longest match, treating quantifiers as greedy.
         self.nfa.search(text)
     }
 }

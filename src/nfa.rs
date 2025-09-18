@@ -126,7 +126,7 @@ impl Nfa {
     }
 
     pub fn search(&self, inp: &str) -> Option<(usize, usize)> {
-        // Finds earliest shortest match.
+        // Finds earliest longest match.
         let mut state = &mut self.create_tracked_state();
         let mut state2 = &mut self.create_tracked_state();
 
@@ -141,22 +141,29 @@ impl Nfa {
                 .min()
         };
 
-        if let Some(start) = found(state) {
-            return Some((start, 0));
-        }
+        let mut best = if found(state).is_some() {
+            Some((0, 0))
+        } else {
+            None
+        };
 
         for (index, c) in inp.chars().enumerate() {
             update_value_tracked(&self.graph, state, c, state2);
             state.clear();
             (state, state2) = (state2, state);
 
-            state.insert(self.start, index + 1);
+            if best.is_none() {
+                state.insert(self.start, index + 1);
+            }
 
             if let Some(start) = found(state) {
-                return Some((start, index + 1));
+                best = match best {
+                    Some((x, _)) if x < start => best,
+                    _ => Some((start, index + 1)),
+                }
             }
         }
 
-        None
+        best
     }
 }

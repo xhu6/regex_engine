@@ -5,7 +5,7 @@ Matches text against a pattern using a NFA in linear time to haystack length.
 Engine features:
 - Check text fully matches
 - Check text contains a match
-- Search text for a match lazily
+- Search text for a match
 
 Regex features:
 - Character classes
